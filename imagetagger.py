@@ -119,6 +119,10 @@ class ImageViewer(QMainWindow):
 		self.menuBar().addMenu(self.viewMenu)
 		self.menuBar().addMenu(self.helpMenu)
 	
+	def mousePressEvent(self, event):
+		pos = self.imageLabel.mapFrom(self, event.pos()) / self.scaleFactor
+		print(pos)
+
 	def updateActions(self):
 		self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
 		self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
