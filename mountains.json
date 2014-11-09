@@ -1,5 +1,20 @@
 [
 	{
+		"Name": "Allalinhorn",
+		"Height": 4026.6,
+		"CH1903": [ 635294.8, 99497.9 ]
+	},
+	{
+		"Name": "Alphubel",
+		"Height": 4204.8,
+		"CH1903": [ 632902.6, 101350.7 ]
+	},
+	{
+		"Name": "Bietschhorn",
+		"Height": 3931.1,
+		"CH1903": [ 631701.3, 137882.0 ]
+	},
+	{
 		"Name": "Brisen",
 		"Height": 2397.8,
 		"CH1903": [ 677702.3, 194692.5 ]
@@ -10,14 +25,144 @@
 		"CH1903": [ 694969.2, 176950.4 ]
 	},
 	{
+		"Name": "Buochserhorn",
+		"Height": 1806.5,
+		"CH1903": [ 675376.7, 199864.9 ]
+	},
+	{
+		"Name": "Chaiserstuel",
+		"Height": 2399.9,
+		"CH1903": [ 678461.7, 192295.8 ]
+	},
+	{
+		"Name": "Chli Windgällen",
+		"Height": 2984,
+		"CH1903": [ 697502.9, 183492.5 ]
+	},
+	{
+		"Name": "Chaiserstock",
+		"Height": 2515.6,
+		"CH1903": [ 698234.4, 198282.0 ]
+	},
+	{
+		"Name": "Dammastock",
+		"Height": 3627.6,
+		"CH1903": [ 675217.0, 166283.6 ]
+	},
+	{
+		"Name": "Dom",
+		"Height": 4545.7,
+		"CH1903": [ 632498.8, 104806.6 ]
+	},
+	{
+		"Name": "Engelberger Rotstock",
+		"Height": 2813.7,
+		"CH1903": [ 680777.7, 189728.9 ]
+	},
+	{
+		"Name": "Eiger",
+		"Height": 3967,
+		"CH1903": [ 643436.4, 158637.2 ]
+	},
+	{
+		"Name": "Fronalpstock",
+		"Height": 1921.1,
+		"CH1903": [ 691213.8, 202601.8 ]
+	},
+	{
+		"Name": "Fulen",
+		"Height": 2485,
+		"CH1903": [ 697234.4, 197141.8 ]
+	},
+	{
+		"Name": "Galenstock",
+		"Height": 3584.6,
+		"CH1903": [ 674943.3, 162837.5 ]
+	},
+	{
+		"Name": "Gitschen",
+		"Height": 2511.6,
+		"CH1903": [ 686627.6, 192411.6 ]
+	},
+	{
+		"Name": "Gross Leckihorn",
+		"Height": 3058.8,
+		"CH1903": [ 678682.3, 154345.5 ]
+	},
+	{
+		"Name": "Grosser Mythen",
+		"Height": 1896.4,
+		"CH1903": [ 695021.4, 209522.8 ]
+	},
+	{
+		"Name": "Gross Windgällen",
+		"Height": 3184,
+		"CH1903": [ 698722.8, 184826.7 ]
+	},
+	{
+		"Name": "Haggenspitz",
+		"Height": 1762.2,
+		"CH1903": [ 694831.1, 211057.2 ]
+	},
+	{
+		"Name": "Hoch Geissberg",
+		"Height": 2366.2,
+		"CH1903": [ 688338.9, 186769.0 ]
+	},
+	{
+		"Name": "Jungfrau",
+		"Height": 4158.8,
+		"CH1903": [ 640194.3, 154077.7 ]
+	},
+	{
+		"Name": "Kleiner Mythen",
+		"Height": 1806.8,
+		"CH1903": [ 694707.3, 210718.7 ]
+	},
+	{
+		"Name": "Matterhorn",
+		"Height": 4478,
+		"CH1903": [ 617050.6, 91672.5 ]
+	},
+	{
 		"Name": "Mönch",
 		"Height": 4108.6,
 		"CH1903": [ 642837.1, 156509.9 ]
 	},
 	{
+		"Name": "Monte Leone",
+		"Height": 3549.4,
+		"CH1903": [ 651790.3, 122223.7 ]
+	},
+	{
+		"Name": "Lagginhorn",
+		"Height": 4007.2,
+		"CH1903": [ 643603.6, 111887.2 ]
+	},
+	{
+		"Name": "Lenzspitze",
+		"Height": 4286.8,
+		"CH1903": [ 633247.0, 105983.5 ]
+	},
+	{
+		"Name": "Nadelhorn",
+		"Height": 4313.8,
+		"CH1903": [ 632893.0, 106464.3 ]
+	},
+	{
 		"Name": "Niderbauen Chulm",
 		"Height": 1922.5,
 		"CH1903": [ 685139.3, 200223.3 ]
+	},
+	{
+		"Name": "Oberalpstock",
+		"Height": 3325.2,
+		"CH1903": [ 701698.7, 177687.9 ]
+	},
+	{
+		"Name": "Oberbauenstock",
+		"Height": 2116.2,
+		"CH1903": [ 684189.3, 198009.9 ]
 	},
 	{
 		"Name": "Pilatus Esel",
@@ -28,6 +173,16 @@
 		"Name": "Rigi Hochflue",
 		"Height": 1695.1,
 		"CH1903": [ 685259.8, 207186.8 ]
+	},
+	{
+		"Name": "Rimpfischhorn",
+		"Height": 4187.8,
+		"CH1903": [ 634484.0, 96939.3 ]
+	},
+	{
+		"Name": "Rigidalstock",
+		"Height": 2590.5,
+		"CH1903": [ 674806.8, 189477.1 ]
 	},
 	{
 		"Name": "Rophaien",
@@ -45,6 +200,21 @@
 		"CH1903": [ 680357.2, 196928.4 ]
 	},
 	{
+		"Name": "Stanserhorn",
+		"Height": 1897.8,
+		"CH1903": [ 668663.7, 198022.3 ]
+	},
+	{
+		"Name": "Sustenhorn",
+		"Height": 3495.7,
+		"CH1903": [ 677749.0, 172467.4 ]
+	},
+	{
+		"Name": "Täschhorn",
+		"Height": 4493.3,
+		"CH1903": [ 632377.6, 103632.8 ]
+	},
+	{
 		"Name": "Titlis",
 		"Height": 3238,
 		"CH1903": [ 676312.2, 180581.4 ]
@@ -53,5 +223,30 @@
 		"Name": "Uri Rotstock",
 		"Height": 2926.7,
 		"CH1903": [ 683620.7, 190649.7 ]
+	},
+	{
+		"Name": "Wasserbergfirst",
+		"Height": 2341.2,
+		"CH1903": [ 702816.2, 199601.6 ]
+	},
+	{
+		"Name": "Weisshorn",
+		"Height": 4499.7,
+		"CH1903": [ 621454.1, 105564.6 ]
+	},
+	{
+		"Name": "Weissmies",
+		"Height": 4017.3,
+		"CH1903": [ 644315.6, 108628.5 ]
+	},
+	{
+		"Name": "Wetterhorn",
+		"Height": 3689,
+		"CH1903": [ 651829.6, 165502.7 ]
+	},
+	{
+		"Name": "Wissigstock",
+		"Height": 2884.8,
+		"CH1903": [ 681493.8, 188809.1 ]
 	}
 ]

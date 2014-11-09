@@ -53,4 +53,5 @@ for place in placesRoot:
 	p = Place(place)
 	mountains[p.name] = p
 
+print("Database contains {0} mountains in total".format(len(mountains)))
 print(mountains['Bristen'])
