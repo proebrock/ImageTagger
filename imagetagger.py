@@ -1,10 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
-from PyQt5.QtCore import QDir, Qt
-from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
+from PyQt5.QtCore import QDir, QSize, QRect, Qt
+from PyQt5.QtGui import QColor, QPen, QImage, QPainter, QPalette, QPixmap, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel,
 	QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy)
+
+
+
+class MyLabel(QLabel):
+	def __init__(self, parent=None):
+		super(MyLabel, self).__init__(parent)
+
+	def paintEvent(self, event):
+		super(MyLabel, self).paintEvent(event)
+		if self is not None:
+			painter = QPainter(self)
+			painter.setRenderHint(QPainter.Antialiasing, True);
+			painter.setPen(QPen(QColor(255, 0, 0, 255), 7))
+			painter.drawEllipse(QRect(100, 50, 10, 10))
 
 
 
@@ -14,7 +28,7 @@ class ImageViewer(QMainWindow):
 		
 		self.scaleFactor = 0.0
 		
-		self.imageLabel = QLabel()
+		self.imageLabel = MyLabel()
 		self.imageLabel.setBackgroundRole(QPalette.Base)
 		self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 		self.imageLabel.setScaledContents(True)
@@ -119,15 +133,18 @@ class ImageViewer(QMainWindow):
 		self.menuBar().addMenu(self.viewMenu)
 		self.menuBar().addMenu(self.helpMenu)
 	
-	def mousePressEvent(self, event):
-		pos = self.imageLabel.mapFrom(self, event.pos()) / self.scaleFactor
-		print(pos)
-
 	def updateActions(self):
 		self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
 		self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
 		self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
 	
+	def mousePressEvent(self, event):
+		if self.scaleFactor == 0.0:
+			return
+		pos = self.imageLabel.mapFrom(self, event.pos()) / self.scaleFactor
+		print(pos)
+		self.update()
+
 	def scaleImage(self, factor):
 		self.scaleFactor *= factor
 		self.imageLabel.resize(self.scaleFactor * self.imageLabel.pixmap().size())
