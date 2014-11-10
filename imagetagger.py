@@ -8,25 +8,50 @@ from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel,
 
 
 
+class Marker:
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+
+
+
 class MyLabel(QLabel):
 	def __init__(self, parent=None):
 		super(MyLabel, self).__init__(parent)
+		self.markerList = []
+		self.scaleFactor = 1.0
+	
+	def getScaleFactor(self):
+		return self.scaleFactor
+
+	def normalSize(self):
+		self.scaleFactor = 1.0
+		imageLabel.adjustSize()
+
+	def scale(self, factor):
+		self.scaleFactor *= factor
+		self.resize(self.scaleFactor * self.pixmap().size())
 
 	def paintEvent(self, event):
 		super(MyLabel, self).paintEvent(event)
-		if self is not None:
+		if self.pixmap() is not None:
 			painter = QPainter(self)
-			painter.setRenderHint(QPainter.Antialiasing, True);
+			painter.setRenderHint(QPainter.Antialiasing, True)
 			painter.setPen(QPen(QColor(255, 0, 0, 255), 7))
-			painter.drawEllipse(QRect(100, 50, 10, 10))
+			radius = 20
+			for marker in self.markerList:
+				x = marker.x * self.scaleFactor - radius
+				y = marker.y * self.scaleFactor - radius
+				painter.drawEllipse(QRect(x, y, 2*radius, 2*radius))
+
+	def addMarker(self, x, y):
+		self.markerList.append(Marker(x, y))
 
 
 
 class ImageViewer(QMainWindow):
 	def __init__(self):
 		super(ImageViewer, self).__init__()
-		
-		self.scaleFactor = 0.0
 		
 		self.imageLabel = MyLabel()
 		self.imageLabel.setBackgroundRole(QPalette.Base)
@@ -54,7 +79,6 @@ class ImageViewer(QMainWindow):
 				return
 			
 			self.imageLabel.setPixmap(QPixmap.fromImage(image))
-			self.scaleFactor = 1.0
 			
 			self.fitToWindowAct.setEnabled(True)
 			self.updateActions()
@@ -69,9 +93,8 @@ class ImageViewer(QMainWindow):
 		self.scaleImage(0.8)
 	
 	def normalSize(self):
-		self.imageLabel.adjustSize()
-		self.scaleFactor = 1.0
-	
+		self.imageLabel.normalSize()
+
 	def fitToWindow(self):
 		fitToWindow = self.fitToWindowAct.isChecked()
 		self.scrollArea.setWidgetResizable(fitToWindow)
@@ -105,7 +128,7 @@ class ImageViewer(QMainWindow):
 		self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-",
 			enabled=False, triggered=self.zoomOut)
 		self.normalSizeAct = QAction("&Normal Size", self, shortcut="Ctrl+S",
-			enabled=False, triggered=self.normalSize)
+			enabled=False, triggered=self.imageLabel.normalSize)
 		self.fitToWindowAct = QAction("&Fit to Window", self, enabled=False,
 			checkable=True, shortcut="Ctrl+F", triggered=self.fitToWindow)
 		self.aboutAct = QAction("&About", self, triggered=self.about)
@@ -138,26 +161,24 @@ class ImageViewer(QMainWindow):
 		self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
 		self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
 	
-	def mousePressEvent(self, event):
-		if self.scaleFactor == 0.0:
-			return
-		pos = self.imageLabel.mapFrom(self, event.pos()) / self.scaleFactor
-		print(pos)
-		self.update()
+	def mouseDoubleClickEvent(self, event):
+		pos = self.imageLabel.mapFrom(self, event.pos()) / self.imageLabel.getScaleFactor()
+		self.imageLabel.addMarker(pos.x(), pos.y())
+		self.imageLabel.update()
 
 	def scaleImage(self, factor):
-		self.scaleFactor *= factor
-		self.imageLabel.resize(self.scaleFactor * self.imageLabel.pixmap().size())
+		self.imageLabel.scale(factor)
 		
 		self.adjustScrollBar(self.scrollArea.horizontalScrollBar(), factor)
 		self.adjustScrollBar(self.scrollArea.verticalScrollBar(), factor)
 		
-		self.zoomInAct.setEnabled(self.scaleFactor < 3.0)
-		self.zoomOutAct.setEnabled(self.scaleFactor > 0.333)
+		#self.zoomInAct.setEnabled(self.scaleFactor < 3.0)
+		#self.zoomOutAct.setEnabled(self.scaleFactor > 0.333)
 	
 	def adjustScrollBar(self, scrollBar, factor):
 		scrollBar.setValue(int(factor * scrollBar.value()
 			+ ((factor - 1) * scrollBar.pageStep()/2)))
+
 
 
 if __name__ == '__main__':
