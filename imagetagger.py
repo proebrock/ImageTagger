@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import sys
+import sys, os
+from place import Place
 from PyQt5.QtCore import QDir, QSize, QRect, Qt
 from PyQt5.QtGui import QColor, QPen, QImage, QPainter, QPalette, QPixmap, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel,
@@ -26,7 +27,7 @@ class MyLabel(QLabel):
 
 	def normalSize(self):
 		self.scaleFactor = 1.0
-		imageLabel.adjustSize()
+		self.adjustSize()
 
 	def scale(self, factor):
 		self.scaleFactor *= factor
@@ -52,6 +53,10 @@ class MyLabel(QLabel):
 class ImageViewer(QMainWindow):
 	def __init__(self):
 		super(ImageViewer, self).__init__()
+
+		self.mountains = {}
+		if os.path.exists('mountains.json'):
+			self.mountains = Place.LoadListFromFile('mountains.json')
 		
 		self.imageLabel = MyLabel()
 		self.imageLabel.setBackgroundRole(QPalette.Base)

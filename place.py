@@ -5,6 +5,7 @@
 
 import json
 import numpy as np
+import webbrowser
 
 
 
@@ -19,6 +20,10 @@ class Place:
 	def __str__(self):
 		return self.name + ' ' + str(self.height) + \
 			'm @' +  str(self.ch1903[0]) + ',' + str(self.ch1903[1])
+
+	def ShowOnMap(self):
+		url = 'http://map.geo.admin.ch/?selectedNode=node_ch.swisstopo.swisstlm3d-wanderwege1&Y={0}&X={1}&zoom=6&bgLayer=ch.swisstopo.pixelkarte-farbe&lang=de&topic=ech&layers=ch.swisstopo.swisstlm3d-wanderwege&crosshair=bowl'.format(self.ch1903[0], self.ch1903[1])
+		webbrowser.open_new_tab(url)
 
 	def Distance(self, otherPlace):
 		delta = self.ch1903 - otherPlace.ch1903
@@ -41,17 +46,15 @@ class Place:
 			+ 0.1306 * y * pow(x,2) - 0.0436 * pow(y,3)
 		lng = (lng * 100.0) / 36.0
 		return np.array([lat, lng])
+	
+	@staticmethod
+	def LoadListFromFile(filename):
+		f = open(filename)
+		placesRoot = json.load(f)
+		f.close()
+		places = {}
+		for place in placesRoot:
+			p = Place(place)
+			places[p.name + ' ' + str(p.height) + 'm'] = p
+		return places
 
-
-
-# Load dictionary of places
-f = open("mountains.json")
-placesRoot = json.load(f)
-f.close()
-mountains = {}
-for place in placesRoot:
-	p = Place(place)
-	mountains[p.name] = p
-
-print("Database contains {0} mountains in total".format(len(mountains)))
-print(mountains['Bristen'])
