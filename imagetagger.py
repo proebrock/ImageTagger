@@ -33,6 +33,11 @@ class MyLabel(QLabel):
 		self.scaleFactor *= factor
 		self.resize(self.scaleFactor * self.pixmap().size())
 
+	def mouseDoubleClickEvent(self, event):
+		pos = event.pos() / self.scaleFactor
+		self.markerList.append(Marker(pos.x(), pos.y()))
+		self.update()
+
 	def paintEvent(self, event):
 		super(MyLabel, self).paintEvent(event)
 		if self.pixmap() is not None:
@@ -44,9 +49,6 @@ class MyLabel(QLabel):
 				x = marker.x * self.scaleFactor - radius
 				y = marker.y * self.scaleFactor - radius
 				painter.drawEllipse(QRect(x, y, 2*radius, 2*radius))
-
-	def addMarker(self, x, y):
-		self.markerList.append(Marker(x, y))
 
 
 
@@ -166,11 +168,6 @@ class ImageViewer(QMainWindow):
 		self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
 		self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
 	
-	def mouseDoubleClickEvent(self, event):
-		pos = self.imageLabel.mapFrom(self, event.pos()) / self.imageLabel.getScaleFactor()
-		self.imageLabel.addMarker(pos.x(), pos.y())
-		self.imageLabel.update()
-
 	def scaleImage(self, factor):
 		self.imageLabel.scale(factor)
 		
