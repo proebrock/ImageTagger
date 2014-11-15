@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import numpy as np
 import sys, os
 from place import Place
 from PyQt5.QtCore import QDir, QSize, QRect, Qt
@@ -13,6 +14,7 @@ class Marker:
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
+		self.label = 'Mountain 4321m'
 
 
 
@@ -20,8 +22,14 @@ class MyLabel(QLabel):
 	def __init__(self, parent=None):
 		super(MyLabel, self).__init__(parent)
 		self.markerList = []
+		self.showMarkers = True
 		self.scaleFactor = 1.0
-	
+		self.radius = 20
+
+		self.mountains = {}
+		if os.path.exists('mountains.json'):
+			self.mountains = Place.LoadListFromFile('mountains.json')
+		
 	def getScaleFactor(self):
 		return self.scaleFactor
 
@@ -32,23 +40,37 @@ class MyLabel(QLabel):
 	def scale(self, factor):
 		self.scaleFactor *= factor
 		self.resize(self.scaleFactor * self.pixmap().size())
+	
+	def toggleShowMarkers(self):
+		self.showMarkers = not self.showMarkers
+		self.update()
 
 	def mouseDoubleClickEvent(self, event):
+		if not self.showMarkers:
+			return
 		pos = event.pos() / self.scaleFactor
-		self.markerList.append(Marker(pos.x(), pos.y()))
-		self.update()
+		index = -1
+		for i in range(len(self.markerList)):
+			dx = self.markerList[i].x - pos.x()
+			dy = self.markerList[i].y - pos.y()
+			if np.sqrt(dx * dx + dy * dy) <= self.radius:
+				index = i
+				break
+		if index == -1:
+			self.markerList.append(Marker(pos.x(), pos.y()))
+			index = len(self.markerList) - 1
+			self.update()
 
 	def paintEvent(self, event):
 		super(MyLabel, self).paintEvent(event)
-		if self.pixmap() is not None:
+		if self.showMarkers and self.pixmap() is not None:
 			painter = QPainter(self)
 			painter.setRenderHint(QPainter.Antialiasing, True)
-			painter.setPen(QPen(QColor(255, 0, 0, 255), 7))
-			radius = 20
+			painter.setPen(QPen(QColor(255, 0, 0, 255), 5))
 			for marker in self.markerList:
-				x = marker.x * self.scaleFactor - radius
-				y = marker.y * self.scaleFactor - radius
-				painter.drawEllipse(QRect(x, y, 2*radius, 2*radius))
+				x = marker.x * self.scaleFactor - self.radius
+				y = marker.y * self.scaleFactor - self.radius
+				painter.drawEllipse(QRect(x, y, 2*self.radius, 2*self.radius))
 
 
 
@@ -56,10 +78,6 @@ class ImageViewer(QMainWindow):
 	def __init__(self):
 		super(ImageViewer, self).__init__()
 
-		self.mountains = {}
-		if os.path.exists('mountains.json'):
-			self.mountains = Place.LoadListFromFile('mountains.json')
-		
 		self.imageLabel = MyLabel()
 		self.imageLabel.setBackgroundRole(QPalette.Base)
 		self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -92,6 +110,9 @@ class ImageViewer(QMainWindow):
 			
 			if not self.fitToWindowAct.isChecked():
 			    self.imageLabel.adjustSize()
+	
+	def viewMarkers(self):
+		self.imageLabel.toggleShowMarkers()
 	
 	def zoomIn(self):
 		self.scaleImage(1.25)
@@ -130,6 +151,9 @@ class ImageViewer(QMainWindow):
 			triggered=self.open)
 		self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q",
 			triggered=self.close)
+		self.viewMarkersAct = QAction("View &Markers", self, enabled=True,
+			checkable=True, shortcut="Ctrl+M", triggered=self.viewMarkers)
+		self.viewMarkersAct.setChecked(True);
 		self.zoomInAct = QAction("Zoom &In (25%)", self, shortcut="Ctrl++",
 			enabled=False, triggered=self.zoomIn)
 		self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-",
@@ -149,6 +173,8 @@ class ImageViewer(QMainWindow):
 		self.fileMenu.addAction(self.exitAct)
 		
 		self.viewMenu = QMenu("&View", self)
+		self.viewMenu.addAction(self.viewMarkersAct)
+		self.viewMenu.addSeparator()
 		self.viewMenu.addAction(self.zoomInAct)
 		self.viewMenu.addAction(self.zoomOutAct)
 		self.viewMenu.addAction(self.normalSizeAct)
