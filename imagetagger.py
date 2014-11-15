@@ -3,10 +3,16 @@
 import numpy as np
 import sys, os
 from place import Place
-from PyQt5.QtCore import QDir, QSize, QRect, Qt
+from PyQt5.QtCore import QDir, QSize, QPoint, QRect, Qt
 from PyQt5.QtGui import QColor, QPen, QImage, QPainter, QPalette, QPixmap, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel,
-	QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy)
+	QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy, QDialog, QVBoxLayout, QComboBox)
+
+
+
+mountains = {}
+if os.path.exists('mountains.json'):
+	mountains = Place.LoadListFromFile('mountains.json')
 
 
 
@@ -14,8 +20,29 @@ class Marker:
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
-		self.label = 'Mountain 4321m'
+		self.key = 'Mountain 4321m'
 
+
+class MarkerPropertyDialog(QDialog):
+	def __init__(self, parent=None):
+		super(MarkerPropertyDialog, self).__init__(parent)
+		
+		layout = QVBoxLayout(self)
+
+		self.cbox = QComboBox(self)
+		layout.addWidget(self.cbox)
+
+	@staticmethod
+	def GetMarkerSelection(marker, parent=None):
+		dialog = MarkerPropertyDialog(parent)
+		index = -1
+		sortedKeys = sorted(mountains.keys())
+		for i in range(len(sortedKeys)):
+			dialog.cbox.addItem(sortedKeys[i])
+			if sortedKeys[i] == marker.key:
+				index = i
+		dialog.cbox.setCurrentIndex = index
+		result = dialog.exec_()
 
 
 class MyLabel(QLabel):
@@ -24,12 +51,8 @@ class MyLabel(QLabel):
 		self.markerList = []
 		self.showMarkers = True
 		self.scaleFactor = 1.0
-		self.radius = 20
+		self.radius = 10
 
-		self.mountains = {}
-		if os.path.exists('mountains.json'):
-			self.mountains = Place.LoadListFromFile('mountains.json')
-		
 	def getScaleFactor(self):
 		return self.scaleFactor
 
@@ -60,17 +83,21 @@ class MyLabel(QLabel):
 			self.markerList.append(Marker(pos.x(), pos.y()))
 			index = len(self.markerList) - 1
 			self.update()
+		MarkerPropertyDialog.GetMarkerSelection(self.markerList[index], self)
 
 	def paintEvent(self, event):
 		super(MyLabel, self).paintEvent(event)
 		if self.showMarkers and self.pixmap() is not None:
 			painter = QPainter(self)
 			painter.setRenderHint(QPainter.Antialiasing, True)
-			painter.setPen(QPen(QColor(255, 0, 0, 255), 5))
+			painter.setPen(QPen(QColor(255, 0, 0, 255), 3))
 			for marker in self.markerList:
 				x = marker.x * self.scaleFactor - self.radius
 				y = marker.y * self.scaleFactor - self.radius
 				painter.drawEllipse(QRect(x, y, 2*self.radius, 2*self.radius))
+				x = marker.x * self.scaleFactor + 1.5 * self.radius
+				y = marker.y * self.scaleFactor
+				painter.drawText(QPoint(x, y), marker.key)
 
 
 
