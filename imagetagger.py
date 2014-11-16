@@ -5,8 +5,9 @@ import sys, os
 from place import Place
 from PyQt5.QtCore import QDir, QSize, QPoint, QRect, Qt
 from PyQt5.QtGui import QColor, QPen, QImage, QPainter, QPalette, QPixmap, QFont
-from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel,
-	QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy, QDialog, QVBoxLayout, QComboBox)
+from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel, QLineEdit,
+	QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy, QDialog,
+	QGroupBox, QLayout, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton)
 
 
 
@@ -20,29 +21,73 @@ class Marker:
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
-		self.key = 'Mountain 4321m'
+		self.key = 'New'
+
 
 
 class MarkerPropertyDialog(QDialog):
 	def __init__(self, parent=None):
 		super(MarkerPropertyDialog, self).__init__(parent)
-		
-		layout = QVBoxLayout(self)
+		self.setWindowTitle('Marker Properties')
+		self.setWindowFlags(Qt.Dialog | Qt.WindowMinimizeButtonHint)
+		mainLayout = QVBoxLayout(self)
+		mainLayout.setSizeConstraint(QLayout.SetFixedSize)
 
+		coordLayout = QVBoxLayout()
+		xLayout = QHBoxLayout()
+		xLayout.addWidget(QLabel('X'))
+		self.xedit = QLineEdit('123')
+		self.xedit.setReadOnly(True)
+		self.xedit.setAlignment(Qt.AlignRight)
+		self.xedit.setFixedWidth(70)
+		xLayout.addWidget(self.xedit)
+		coordLayout.addLayout(xLayout)
+		yLayout = QHBoxLayout()
+		yLayout.addWidget(QLabel('Y'))
+		self.yedit = QLineEdit('321')
+		self.yedit.setReadOnly(True)
+		self.yedit.setAlignment(Qt.AlignRight)
+		self.yedit.setFixedWidth(70)
+		yLayout.addWidget(self.yedit)
+		coordLayout.addLayout(yLayout)
+		gb = QGroupBox('Screen Coordinates')
+		gb.setLayout(coordLayout)
+		mainLayout.addWidget(gb)
+
+		cboxLayout = QVBoxLayout()
 		self.cbox = QComboBox(self)
-		layout.addWidget(self.cbox)
+		cboxLayout.addWidget(self.cbox)
+		gb = QGroupBox('Marker key')
+		gb.setLayout(cboxLayout)
+		mainLayout.addWidget(gb)
+
+		buttonLayout = QHBoxLayout()
+		delButton = QPushButton('Delete Marker', self)
+		delButton.clicked.connect(self.reject)
+		buttonLayout.addWidget(delButton)
+		okButton = QPushButton('OK', self)
+		okButton.clicked.connect(self.accept)
+		okButton.setDefault(True)
+		okButton.setFocus()
+		buttonLayout.addWidget(okButton)
+		mainLayout.addLayout(buttonLayout)
 
 	@staticmethod
 	def GetMarkerSelection(marker, parent=None):
 		dialog = MarkerPropertyDialog(parent)
-		index = -1
+		index = 0
 		sortedKeys = sorted(mountains.keys())
 		for i in range(len(sortedKeys)):
 			dialog.cbox.addItem(sortedKeys[i])
 			if sortedKeys[i] == marker.key:
 				index = i
-		dialog.cbox.setCurrentIndex = index
+		print(index)
+		dialog.cbox.setCurrentIndex(index)
+		dialog.xedit.setText(str(marker.x))
+		dialog.yedit.setText(str(marker.y))
 		result = dialog.exec_()
+		return (result == QDialog.Accepted, dialog.cbox.currentText())
+
 
 
 class MyLabel(QLabel):
@@ -83,7 +128,12 @@ class MyLabel(QLabel):
 			self.markerList.append(Marker(pos.x(), pos.y()))
 			index = len(self.markerList) - 1
 			self.update()
-		MarkerPropertyDialog.GetMarkerSelection(self.markerList[index], self)
+		(accepted, markerKey) = MarkerPropertyDialog.GetMarkerSelection(self.markerList[index], self)
+		if accepted:
+			self.markerList[index].key = markerKey
+		else:
+			del self.markerList[index]
+			
 
 	def paintEvent(self, event):
 		super(MyLabel, self).paintEvent(event)
@@ -118,16 +168,16 @@ class ImageViewer(QMainWindow):
 		self.createActions()
 		self.createMenus()
 		
-		self.setWindowTitle("Image Viewer")
+		self.setWindowTitle('Image Viewer')
 		self.resize(500, 400)
 
 	def open(self):
-		fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
+		fileName, _ = QFileDialog.getOpenFileName(self, 'Open File',
 			QDir.currentPath())
 		if fileName:
 			image = QImage(fileName)
 			if image.isNull():
-				QMessageBox.information(self, "Image Viewer", "Cannot load %s." % fileName)
+				QMessageBox.information(self, 'Image Viewer', 'Cannot load %s.' % fileName)
 				return
 			
 			self.imageLabel.setPixmap(QPixmap.fromImage(image))
@@ -158,48 +208,48 @@ class ImageViewer(QMainWindow):
 		self.updateActions()
 	
 	def about(self):
-		QMessageBox.about(self, "About Image Viewer",
-			"<p>The <b>Image Viewer</b> example shows how to combine "
-			"QLabel and QScrollArea to display an image. QLabel is "
-			"typically used for displaying text, but it can also display "
-			"an image. QScrollArea provides a scrolling view around "
-			"another widget. If the child widget exceeds the size of the "
-			"frame, QScrollArea automatically provides scroll bars.</p>"
-			"<p>The example demonstrates how QLabel's ability to scale "
-			"its contents (QLabel.scaledContents), and QScrollArea's "
-			"ability to automatically resize its contents "
-			"(QScrollArea.widgetResizable), can be used to implement "
-			"zooming and scaling features.</p>"
-			"<p>In addition the example shows how to use QPainter to "
-			"print an image.</p>")
+		QMessageBox.about(self, 'About Image Viewer',
+			'<p>The <b>Image Viewer</b> example shows how to combine '
+			'QLabel and QScrollArea to display an image. QLabel is '
+			'typically used for displaying text, but it can also display '
+			'an image. QScrollArea provides a scrolling view around '
+			'another widget. If the child widget exceeds the size of the '
+			'frame, QScrollArea automatically provides scroll bars.</p>'
+			'<p>The example demonstrates how QLabel\'s ability to scale '
+			'its contents (QLabel.scaledContents), and QScrollArea\'s '
+			'ability to automatically resize its contents '
+			'(QScrollArea.widgetResizable), can be used to implement '
+			'zooming and scaling features.</p>'
+			'<p>In addition the example shows how to use QPainter to '
+			'print an image.</p>')
 	
 	def createActions(self):
-		self.openAct = QAction("&Open...", self, shortcut="Ctrl+O",
+		self.openAct = QAction('&Open...', self, shortcut='Ctrl+O',
 			triggered=self.open)
-		self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q",
+		self.exitAct = QAction('E&xit', self, shortcut='Ctrl+Q',
 			triggered=self.close)
-		self.viewMarkersAct = QAction("View &Markers", self, enabled=True,
-			checkable=True, shortcut="Ctrl+M", triggered=self.viewMarkers)
-		self.viewMarkersAct.setChecked(True);
-		self.zoomInAct = QAction("Zoom &In (25%)", self, shortcut="Ctrl++",
+		self.viewMarkersAct = QAction('View &Markers', self, enabled=True,
+			checkable=True, shortcut='Ctrl+M', triggered=self.viewMarkers)
+		self.viewMarkersAct.setChecked(True)
+		self.zoomInAct = QAction('Zoom &In (25%)', self, shortcut='Ctrl++',
 			enabled=False, triggered=self.zoomIn)
-		self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-",
+		self.zoomOutAct = QAction('Zoom &Out (25%)', self, shortcut='Ctrl+-',
 			enabled=False, triggered=self.zoomOut)
-		self.normalSizeAct = QAction("&Normal Size", self, shortcut="Ctrl+S",
+		self.normalSizeAct = QAction('&Normal Size', self, shortcut='Ctrl+S',
 			enabled=False, triggered=self.imageLabel.normalSize)
-		self.fitToWindowAct = QAction("&Fit to Window", self, enabled=False,
-			checkable=True, shortcut="Ctrl+F", triggered=self.fitToWindow)
-		self.aboutAct = QAction("&About", self, triggered=self.about)
-		self.aboutQtAct = QAction("About &Qt", self,
+		self.fitToWindowAct = QAction('&Fit to Window', self, enabled=False,
+			checkable=True, shortcut='Ctrl+F', triggered=self.fitToWindow)
+		self.aboutAct = QAction('&About', self, triggered=self.about)
+		self.aboutQtAct = QAction('About &Qt', self,
 			triggered=QApplication.instance().aboutQt)
 	
 	def createMenus(self):
-		self.fileMenu = QMenu("&File", self)
+		self.fileMenu = QMenu('&File', self)
 		self.fileMenu.addAction(self.openAct)
 		self.fileMenu.addSeparator()
 		self.fileMenu.addAction(self.exitAct)
 		
-		self.viewMenu = QMenu("&View", self)
+		self.viewMenu = QMenu('&View', self)
 		self.viewMenu.addAction(self.viewMarkersAct)
 		self.viewMenu.addSeparator()
 		self.viewMenu.addAction(self.zoomInAct)
@@ -208,7 +258,7 @@ class ImageViewer(QMainWindow):
 		self.viewMenu.addSeparator()
 		self.viewMenu.addAction(self.fitToWindowAct)
 		
-		self.helpMenu = QMenu("&Help", self)
+		self.helpMenu = QMenu('&Help', self)
 		self.helpMenu.addAction(self.aboutAct)
 		self.helpMenu.addAction(self.aboutQtAct)
 		
