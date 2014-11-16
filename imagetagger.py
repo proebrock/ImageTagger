@@ -206,7 +206,7 @@ class ImageViewer(QMainWindow):
 
 	def open(self):
 		fileName, _ = QFileDialog.getOpenFileName(self, 'Open File',
-			QDir.currentPath())
+			QDir.currentPath(), filter='JPEG (*.jpeg *.jpg)')
 		if fileName:
 			self.imageLabel.open(fileName)
 			
