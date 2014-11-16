@@ -49,12 +49,13 @@ class Place:
 	
 	@staticmethod
 	def LoadListFromFile(filename):
-		f = open(filename)
-		placesRoot = json.load(f)
-		f.close()
 		places = {}
-		for place in placesRoot:
-			p = Place(place)
-			places[p.name + ' ' + str(p.height) + 'm'] = p
+		f = open(filename)
+		if f is not None:
+			placesRoot = json.load(f)
+			f.close()
+			for node in placesRoot:
+				p = Place(node)
+				places[p.name + ' ' + str(p.height) + 'm'] = p
 		return places
 

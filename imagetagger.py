@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+
+import json
 import numpy as np
 import sys, os
 from place import Place
@@ -18,11 +21,19 @@ if os.path.exists('mountains.json'):
 
 
 class Marker:
-	def __init__(self, x, y):
+	def __init__(self, x=None, y=None, key=''):
 		self.x = x
 		self.y = y
-		self.key = 'New'
+		self.key = key
 
+	def Load(self, node):
+		self.x = float(node['X'])
+		self.y = float(node['Y'])
+		self.key = node['Key']
+
+	def Save(self, node):
+		pass
+		
 
 
 class MarkerPropertyDialog(QDialog):
@@ -36,7 +47,7 @@ class MarkerPropertyDialog(QDialog):
 		coordLayout = QVBoxLayout()
 		xLayout = QHBoxLayout()
 		xLayout.addWidget(QLabel('X'))
-		self.xedit = QLineEdit('123')
+		self.xedit = QLineEdit('')
 		self.xedit.setReadOnly(True)
 		self.xedit.setAlignment(Qt.AlignRight)
 		self.xedit.setFixedWidth(70)
@@ -44,7 +55,7 @@ class MarkerPropertyDialog(QDialog):
 		coordLayout.addLayout(xLayout)
 		yLayout = QHBoxLayout()
 		yLayout.addWidget(QLabel('Y'))
-		self.yedit = QLineEdit('321')
+		self.yedit = QLineEdit('')
 		self.yedit.setReadOnly(True)
 		self.yedit.setAlignment(Qt.AlignRight)
 		self.yedit.setFixedWidth(70)
@@ -73,15 +84,13 @@ class MarkerPropertyDialog(QDialog):
 		mainLayout.addLayout(buttonLayout)
 
 	@staticmethod
-	def GetMarkerSelection(marker, parent=None):
+	def GetMarkerSelection(marker, places, parent=None):
 		dialog = MarkerPropertyDialog(parent)
 		index = 0
-		sortedKeys = sorted(mountains.keys())
-		for i in range(len(sortedKeys)):
-			dialog.cbox.addItem(sortedKeys[i])
-			if sortedKeys[i] == marker.key:
+		for i in range(len(places)):
+			dialog.cbox.addItem(places[i])
+			if places[i] == marker.key:
 				index = i
-		print(index)
 		dialog.cbox.setCurrentIndex(index)
 		dialog.xedit.setText(str(marker.x))
 		dialog.yedit.setText(str(marker.y))
@@ -93,10 +102,33 @@ class MarkerPropertyDialog(QDialog):
 class MyLabel(QLabel):
 	def __init__(self, parent=None):
 		super(MyLabel, self).__init__(parent)
+		self.setBackgroundRole(QPalette.Base)
+		self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+		self.setScaledContents(True)
 		self.markerList = []
 		self.showMarkers = True
 		self.scaleFactor = 1.0
 		self.radius = 10
+	
+	def open(self, filename):
+		# Load image data
+		image = QImage(filename)
+		if image.isNull():
+			QMessageBox.information(self, 'Image Viewer', 'Cannot load %s.' % filename)
+			return		
+		self.setPixmap(QPixmap.fromImage(image))
+		# Load marker list
+		jsonfilename = os.path.splitext(filename)[0] + '.json'
+		self.markerList = []
+		f = open(jsonfilename)
+		if f is not None:
+			markersRoot = json.load(f)
+			f.close()
+			for node in markersRoot:
+				m = Marker()
+				m.Load(node)
+				self.markerList.append(m)
+			
 
 	def getScaleFactor(self):
 		return self.scaleFactor
@@ -108,6 +140,9 @@ class MyLabel(QLabel):
 	def scale(self, factor):
 		self.scaleFactor *= factor
 		self.resize(self.scaleFactor * self.pixmap().size())
+	
+	def deleteAllMarkers(self):
+		self.markerList = []
 	
 	def toggleShowMarkers(self):
 		self.showMarkers = not self.showMarkers
@@ -128,7 +163,8 @@ class MyLabel(QLabel):
 			self.markerList.append(Marker(pos.x(), pos.y()))
 			index = len(self.markerList) - 1
 			self.update()
-		(accepted, markerKey) = MarkerPropertyDialog.GetMarkerSelection(self.markerList[index], self)
+		(accepted, markerKey) = MarkerPropertyDialog.GetMarkerSelection(self.markerList[index],
+			sorted(mountains.keys()), self)
 		if accepted:
 			self.markerList[index].key = markerKey
 		else:
@@ -156,9 +192,6 @@ class ImageViewer(QMainWindow):
 		super(ImageViewer, self).__init__()
 
 		self.imageLabel = MyLabel()
-		self.imageLabel.setBackgroundRole(QPalette.Base)
-		self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-		self.imageLabel.setScaledContents(True)
 		
 		self.scrollArea = QScrollArea()
 		self.scrollArea.setBackgroundRole(QPalette.Dark)
@@ -169,18 +202,13 @@ class ImageViewer(QMainWindow):
 		self.createMenus()
 		
 		self.setWindowTitle('Image Viewer')
-		self.resize(500, 400)
+		self.resize(600, 400)
 
 	def open(self):
 		fileName, _ = QFileDialog.getOpenFileName(self, 'Open File',
 			QDir.currentPath())
 		if fileName:
-			image = QImage(fileName)
-			if image.isNull():
-				QMessageBox.information(self, 'Image Viewer', 'Cannot load %s.' % fileName)
-				return
-			
-			self.imageLabel.setPixmap(QPixmap.fromImage(image))
+			self.imageLabel.open(fileName)
 			
 			self.fitToWindowAct.setEnabled(True)
 			self.updateActions()
