@@ -165,7 +165,7 @@ class MyLabel(QLabel):
 		for i in range(len(self.markerList)):
 			dx = self.markerList[i].x - pos.x()
 			dy = self.markerList[i].y - pos.y()
-			if np.sqrt(dx * dx + dy * dy) <= self.radius:
+			if self.scaleFactor * np.sqrt(dx * dx + dy * dy) <= self.radius:
 				index = i
 				break
 		if index == -1:
