@@ -6,7 +6,7 @@ import json
 import numpy as np
 import sys, os
 from place import Place
-from PyQt5.QtCore import QDir, QSize, QPoint, QRect, Qt
+from PyQt5.QtCore import QDir, QSize, QPoint, QRect, Qt, QTime
 from PyQt5.QtGui import QColor, QPen, QImage, QPainter, QPalette, QPixmap, QFont
 from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QLabel, QLineEdit,
 	QMainWindow, QMenu, QMessageBox, QScrollArea, QSizePolicy, QDialog,
@@ -25,6 +25,10 @@ class Marker:
 		self.key = key
 		self.x = x
 		self.y = y
+
+	def SetPos(self, pos):
+		self.x = pos.x()
+		self.y = pos.y()
 
 	def Load(self, node):
 		self.key = node['Key']
@@ -114,6 +118,8 @@ class MyLabel(QLabel):
 		self.showMarkers = True
 		self.scaleFactor = 1.0
 		self.radius = 10
+		self.grabIndex = None
+		self.clickTimer = QTime()
 	
 	def open(self, filename):
 		# Load image data
@@ -156,29 +162,55 @@ class MyLabel(QLabel):
 	def toggleShowMarkers(self):
 		self.showMarkers = not self.showMarkers
 		self.update()
-
-	def mouseDoubleClickEvent(self, event):
-		if not self.showMarkers:
-			return
+	
+	def getIndexOfMarker(self, event):
 		pos = event.pos() / self.scaleFactor
-		index = -1
 		for i in range(len(self.markerList)):
 			dx = self.markerList[i].x - pos.x()
 			dy = self.markerList[i].y - pos.y()
 			if self.scaleFactor * np.sqrt(dx * dx + dy * dy) <= self.radius:
-				index = i
-				break
-		if index == -1:
+				return (pos, i)
+		return (pos, None)
+
+	def mousePressEvent(self, event):
+		if not event.button() == Qt.LeftButton:
+			return
+		if not self.showMarkers:
+			return
+		(pos, index) = self.getIndexOfMarker(event)
+		if index is not None:
+			self.grabIndex = index;
+			self.clickTimer.start()
+
+	def mouseReleaseEvent(self, event):
+		if not event.button() == Qt.LeftButton:
+			return
+		if not self.showMarkers:
+			return
+		if self.clickTimer.elapsed() < 100:
+			return # Filter released events caused by double clicks
+		(pos, index) = self.getIndexOfMarker(event)
+		if self.grabIndex is not None:
+			self.markerList[self.grabIndex].SetPos(pos)
+			self.grabIndex = None
+			self.update()
+
+	def mouseDoubleClickEvent(self, event):
+		if not event.button() == Qt.LeftButton:
+			return
+		if not self.showMarkers:
+			return
+		(pos, index) = self.getIndexOfMarker(event)
+		if index is None:
 			self.markerList.append(Marker(pos.x(), pos.y()))
 			index = len(self.markerList) - 1
-			self.update()
 		(accepted, markerKey) = MarkerPropertyDialog.GetMarkerSelection(self.markerList[index],
 			sorted(mountains.keys()), self)
 		if accepted:
 			self.markerList[index].key = markerKey
 		else:
 			del self.markerList[index]
-			
+		self.update()
 
 	def paintEvent(self, event):
 		super(MyLabel, self).paintEvent(event)
