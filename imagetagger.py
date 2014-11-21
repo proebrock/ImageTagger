@@ -22,18 +22,22 @@ if os.path.exists('mountains.json'):
 
 class Marker:
 	def __init__(self, x=None, y=None, key=''):
+		self.key = key
 		self.x = x
 		self.y = y
-		self.key = key
 
 	def Load(self, node):
+		self.key = node['Key']
 		self.x = float(node['X'])
 		self.y = float(node['Y'])
-		self.key = node['Key']
 
-	def Save(self, node):
-		pass
-		
+class MarkerEncoder(json.JSONEncoder):
+	def default(self, obj):
+		if isinstance(obj, Marker):
+			return { 'Key': obj.key, 'X': obj.x, 'Y': obj.y }
+		# Let the base class default method raise the TypeError
+		return json.JSONEncoder.default(self, obj)
+
 
 
 class MarkerPropertyDialog(QDialog):
@@ -105,6 +109,7 @@ class MyLabel(QLabel):
 		self.setBackgroundRole(QPalette.Base)
 		self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 		self.setScaledContents(True)
+		self.jsonFilename = None
 		self.markerList = []
 		self.showMarkers = True
 		self.scaleFactor = 1.0
@@ -118,17 +123,21 @@ class MyLabel(QLabel):
 			return		
 		self.setPixmap(QPixmap.fromImage(image))
 		# Load marker list
-		jsonfilename = os.path.splitext(filename)[0] + '.json'
+		self.jsonFilename = os.path.splitext(filename)[0] + '.json'
 		self.markerList = []
-		f = open(jsonfilename)
-		if f is not None:
+		with open(self.jsonFilename, 'r') as f:
 			markersRoot = json.load(f)
 			f.close()
 			for node in markersRoot:
 				m = Marker()
 				m.Load(node)
 				self.markerList.append(m)
-			
+
+	def save(self):
+		if self.jsonFilename is not None:
+			with open(self.jsonFilename, 'w') as f:
+				f.write(json.dumps(self.markerList, cls=MarkerEncoder, \
+					indent=4, separators=(',', ': '), sort_keys=True))
 
 	def getScaleFactor(self):
 		return self.scaleFactor
@@ -216,6 +225,9 @@ class ImageViewer(QMainWindow):
 			if not self.fitToWindowAct.isChecked():
 			    self.imageLabel.adjustSize()
 	
+	def save(self):
+		self.imageLabel.save()
+	
 	def viewMarkers(self):
 		self.imageLabel.toggleShowMarkers()
 	
@@ -254,6 +266,8 @@ class ImageViewer(QMainWindow):
 	def createActions(self):
 		self.openAct = QAction('&Open...', self, shortcut='Ctrl+O',
 			triggered=self.open)
+		self.saveAct = QAction('&Save Markers...', self, shortcut='Ctrl+S',
+			triggered=self.save)
 		self.exitAct = QAction('E&xit', self, shortcut='Ctrl+Q',
 			triggered=self.close)
 		self.viewMarkersAct = QAction('View &Markers', self, enabled=True,
@@ -263,7 +277,7 @@ class ImageViewer(QMainWindow):
 			enabled=False, triggered=self.zoomIn)
 		self.zoomOutAct = QAction('Zoom &Out (25%)', self, shortcut='Ctrl+-',
 			enabled=False, triggered=self.zoomOut)
-		self.normalSizeAct = QAction('&Normal Size', self, shortcut='Ctrl+S',
+		self.normalSizeAct = QAction('&Normal Size', self, shortcut='Ctrl+R',
 			enabled=False, triggered=self.imageLabel.normalSize)
 		self.fitToWindowAct = QAction('&Fit to Window', self, enabled=False,
 			checkable=True, shortcut='Ctrl+F', triggered=self.fitToWindow)
@@ -274,6 +288,7 @@ class ImageViewer(QMainWindow):
 	def createMenus(self):
 		self.fileMenu = QMenu('&File', self)
 		self.fileMenu.addAction(self.openAct)
+		self.fileMenu.addAction(self.saveAct)
 		self.fileMenu.addSeparator()
 		self.fileMenu.addAction(self.exitAct)
 		
