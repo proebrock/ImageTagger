@@ -141,9 +141,13 @@ class MyLabel(QLabel):
 
 	def save(self):
 		if self.jsonFilename is not None:
-			with open(self.jsonFilename, 'w') as f:
-				f.write(json.dumps(self.markerList, cls=MarkerEncoder, \
-					indent=4, separators=(',', ': '), sort_keys=True))
+			if len(self.markerList) > 0:
+				with open(self.jsonFilename, 'w') as f:
+					f.write(json.dumps(self.markerList, cls=MarkerEncoder, \
+						indent=4, separators=(',', ': '), sort_keys=True))
+			else:
+				if os.path.exists(self.jsonFilename):
+					os.remove(self.jsonFilename)
 
 	def getScaleFactor(self):
 		return self.scaleFactor
