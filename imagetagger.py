@@ -181,29 +181,31 @@ class MyLabel(QLabel):
 			return
 		if not self.showMarkers:
 			return
+		self.clickTimer.start()
 		(pos, index) = self.getIndexOfMarker(event)
 		if index is not None:
 			self.grabIndex = index;
-			self.clickTimer.start()
 
 	def mouseReleaseEvent(self, event):
 		if not event.button() == Qt.LeftButton:
 			return
 		if not self.showMarkers:
 			return
+		if self.grabIndex is None:
+			return
 		if self.clickTimer.elapsed() < 100:
 			return # Filter released events caused by double clicks
 		(pos, index) = self.getIndexOfMarker(event)
-		if self.grabIndex is not None:
-			self.markerList[self.grabIndex].SetPos(pos)
-			self.grabIndex = None
-			self.update()
+		self.markerList[self.grabIndex].SetPos(pos)
+		self.grabIndex = None
+		self.update()
 
 	def mouseDoubleClickEvent(self, event):
 		if not event.button() == Qt.LeftButton:
 			return
 		if not self.showMarkers:
 			return
+		self.grabIndex = None
 		(pos, index) = self.getIndexOfMarker(event)
 		if index is None:
 			self.markerList.append(Marker(pos.x(), pos.y()))
