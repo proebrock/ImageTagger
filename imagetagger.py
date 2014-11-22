@@ -4,7 +4,10 @@
 
 import json
 import numpy as np
+from scipy.optimize import minimize
 import sys, os
+from PIL import Image
+from PIL.ExifTags import TAGS
 from place import Place
 from PyQt5.QtCore import QDir, QSize, QPoint, QRect, Qt, QTime
 from PyQt5.QtGui import QColor, QPen, QImage, QPainter, QPalette, QPixmap, QFont
@@ -41,6 +44,39 @@ class MarkerEncoder(json.JSONEncoder):
 			return { 'Key': obj.key, 'X': obj.x, 'Y': obj.y }
 		# Let the base class default method raise the TypeError
 		return json.JSONEncoder.default(self, obj)
+
+class MarkerList(list):
+	def __init__(self):
+		super(MarkerList, self).__init__()
+
+	def Load(self, filename):
+		with open(filename, 'r') as f:
+			for node in json.load(f):
+				m = Marker()
+				m.Load(node)
+				self.append(m)
+
+	def Save(self, filename):
+		if len(self) > 0:
+			with open(filename, 'w') as f:
+				f.write(json.dumps(self, cls=MarkerEncoder, \
+					indent=4, separators=(',', ': '), sort_keys=True))
+		else:
+			if os.path.exists(filename):
+				os.remove(filename)
+
+	def GetPositions(self):
+		result = np.zeros((len(self), 3))
+		for i in range(len(self)):
+			# 1st row: Image X coordinates
+			result[i, 0] = self[i].x
+			# 2nd row: Place Y coordinate
+			result[i, 1] = mountains[self[i].key].ch1903[0]
+			# 3rd row: Place X coordinate
+			result[i, 2] = mountains[self[i].key].ch1903[1]
+		order = result[:,0].argsort()
+		result = np.take(result, order, 0)
+		return (result[:,0] - result[0,0], result[:,1:3])
 
 
 
@@ -113,8 +149,9 @@ class MyLabel(QLabel):
 		self.setBackgroundRole(QPalette.Base)
 		self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 		self.setScaledContents(True)
+		self.filename = None
 		self.jsonFilename = None
-		self.markerList = []
+		self.markerList = None
 		self.showMarkers = True
 		self.scaleFactor = 1.0
 		self.radius = 10
@@ -128,26 +165,14 @@ class MyLabel(QLabel):
 			QMessageBox.information(self, 'Image Viewer', 'Cannot load %s.' % filename)
 			return		
 		self.setPixmap(QPixmap.fromImage(image))
-		# Load marker list
+		self.filename = filename
 		self.jsonFilename = os.path.splitext(filename)[0] + '.json'
-		self.markerList = []
-		with open(self.jsonFilename, 'r') as f:
-			markersRoot = json.load(f)
-			f.close()
-			for node in markersRoot:
-				m = Marker()
-				m.Load(node)
-				self.markerList.append(m)
+		self.markerList = MarkerList()
+		self.markerList.Load(self.jsonFilename)
 
 	def save(self):
 		if self.jsonFilename is not None:
-			if len(self.markerList) > 0:
-				with open(self.jsonFilename, 'w') as f:
-					f.write(json.dumps(self.markerList, cls=MarkerEncoder, \
-						indent=4, separators=(',', ': '), sort_keys=True))
-			else:
-				if os.path.exists(self.jsonFilename):
-					os.remove(self.jsonFilename)
+			self.markerList.Save(self.jsonFilename)
 
 	def getScaleFactor(self):
 		return self.scaleFactor
@@ -231,7 +256,44 @@ class MyLabel(QLabel):
 				x = marker.x * self.scaleFactor + 1.5 * self.radius
 				y = marker.y * self.scaleFactor
 				painter.drawText(QPoint(x, y), marker.key)
+	
+	def estimatePosition(self):
+		# Decode EXIF data
+		image = Image.open(self.filename)
+		exifInfo = {}
+		for tag, value in image._getexif().items():
+			decoded = TAGS.get(tag, tag)
+			exifInfo[decoded] = value
+		focalLengthMillimeters = (1.0 * exifInfo['FocalLength'][0]) / exifInfo['FocalLength'][1]
+		print('Focal length {0} mm'.format(focalLengthMillimeters))
+		sensorWidthMillimeters = 35.9 # TODO: Read from EXIF
+		print('Sensor width {0} mm'.format(sensorWidthMillimeters))
+		sensorWidthPixels = 7360 # TODO: Read from EXIF
+		print('Sensor width {0} pixels'.format(sensorWidthPixels))
+		
+		(pixelDiffs, Pn) = self.markerList.GetPositions()
+		print(pixelDiffs)
+		mmDiffs = (sensorWidthMillimeters * pixelDiffs) / sensorWidthPixels
+		angles = 2 * np.arctan2(focalLengthMillimeters, mmDiffs/2.0)
+		angles = np.abs(angles - angles[0])
+		P0_start = np.mean(Pn,0)
 
+		# Calculates angles between P0 and all points in Pn
+		def ForwardTransform(P0, Pn):
+			delta = Pn-P0
+			angles = np.arctan2(delta[:,1],delta[:,0])
+			return np.abs(angles - angles[0])
+		# Helper function of BackwardTransform
+		def	ObjFunc(P0, Pn, angles):
+			return np.sum(np.square(ForwardTransform(P0, Pn) - angles))
+		# Estimates P0 from the points Pn and angles between P0 and Pn
+		def BackwardTransform(P0_start, Pn, angles)	:
+			res = minimize(ObjFunc, P0_start, args=(Pn,angles), method='nelder-mead', \
+				options={'maxfev': 1000000, 'maxiter':1000000, 'xtol': 1e-8, 'disp': True})
+			return res.x
+
+		P0_estim = Place(BackwardTransform(P0_start, Pn, angles))
+		P0_estim.ShowOnMap()
 
 
 class ImageViewer(QMainWindow):
@@ -268,6 +330,9 @@ class ImageViewer(QMainWindow):
 	
 	def viewMarkers(self):
 		self.imageLabel.toggleShowMarkers()
+
+	def estimatePosition(self):
+		self.imageLabel.estimatePosition()
 	
 	def zoomIn(self):
 		self.scaleImage(1.25)
@@ -319,6 +384,8 @@ class ImageViewer(QMainWindow):
 			enabled=False, triggered=self.imageLabel.normalSize)
 		self.fitToWindowAct = QAction('&Fit to Window', self, enabled=False,
 			checkable=True, shortcut='Ctrl+F', triggered=self.fitToWindow)
+		self.estimatePlaceAct = QAction('Estimate &Position', self, shortcut='Ctrl+P', \
+			triggered=self.estimatePosition)
 		self.aboutAct = QAction('&About', self, triggered=self.about)
 		self.aboutQtAct = QAction('About &Qt', self,
 			triggered=QApplication.instance().aboutQt)
@@ -339,12 +406,16 @@ class ImageViewer(QMainWindow):
 		self.viewMenu.addSeparator()
 		self.viewMenu.addAction(self.fitToWindowAct)
 		
+		self.infoMenu = QMenu('&Info', self)
+		self.infoMenu.addAction(self.estimatePlaceAct)
+
 		self.helpMenu = QMenu('&Help', self)
 		self.helpMenu.addAction(self.aboutAct)
 		self.helpMenu.addAction(self.aboutQtAct)
 		
 		self.menuBar().addMenu(self.fileMenu)
 		self.menuBar().addMenu(self.viewMenu)
+		self.menuBar().addMenu(self.infoMenu)
 		self.menuBar().addMenu(self.helpMenu)
 	
 	def updateActions(self):

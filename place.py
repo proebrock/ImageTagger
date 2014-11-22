@@ -11,11 +11,17 @@ import webbrowser
 
 class Place:
 
-	def __init__(self, node):
-		self.name = node['Name']
-		self.height = float(node['Height'])
-		self.ch1903 = np.array([ float(node['CH1903'][0]), \
-			float(node['CH1903'][1]) ])
+	def __init__(self, node_or_array):
+		if isinstance(node_or_array, np.ndarray):
+			self.name = 'Unknown'
+			self.height = 0
+			self.ch1903 = node_or_array
+		else:
+			node = node_or_array
+			self.name = node['Name']
+			self.height = float(node['Height'])
+			self.ch1903 = np.array([ float(node['CH1903'][0]), \
+				float(node['CH1903'][1]) ])
 
 	def __str__(self):
 		return self.name + ' ' + str(self.height) + \
