@@ -2,11 +2,16 @@
 
 
 
-import json
+import sys, os
+# Mathematical
 import numpy as np
 from scipy.optimize import minimize
-import sys, os
+import matplotlib.pyplot as plt
+# JSON reader
+import json
+# Exif reader
 from PIL import Image
+# Qt
 from PIL.ExifTags import TAGS
 from place import Place
 from PyQt5.QtCore import QDir, QSize, QPoint, QRect, Qt, QTime
@@ -50,11 +55,13 @@ class MarkerList(list):
 		super(MarkerList, self).__init__()
 
 	def Load(self, filename):
-		with open(filename, 'r') as f:
-			for node in json.load(f):
-				m = Marker()
-				m.Load(node)
-				self.append(m)
+		del self[:]
+		if (os.path.exists(filename)):
+			with open(filename, 'r') as f:
+				for node in json.load(f):
+					m = Marker()
+					m.Load(node)
+					self.append(m)
 
 	def Save(self, filename):
 		if len(self) > 0:
@@ -151,7 +158,7 @@ class MyLabel(QLabel):
 		self.setScaledContents(True)
 		self.filename = None
 		self.jsonFilename = None
-		self.markerList = None
+		self.markerList = MarkerList()
 		self.showMarkers = True
 		self.scaleFactor = 1.0
 		self.radius = 10
@@ -167,7 +174,6 @@ class MyLabel(QLabel):
 		self.setPixmap(QPixmap.fromImage(image))
 		self.filename = filename
 		self.jsonFilename = os.path.splitext(filename)[0] + '.json'
-		self.markerList = MarkerList()
 		self.markerList.Load(self.jsonFilename)
 
 	def save(self):
@@ -272,7 +278,6 @@ class MyLabel(QLabel):
 		print('Sensor width {0} pixels'.format(sensorWidthPixels))
 		
 		(pixelDiffs, Pn) = self.markerList.GetPositions()
-		print(pixelDiffs)
 		mmDiffs = (sensorWidthMillimeters * pixelDiffs) / sensorWidthPixels
 		angles = 2 * np.arctan2(focalLengthMillimeters, mmDiffs/2.0)
 		angles = np.abs(angles - angles[0])
@@ -292,8 +297,17 @@ class MyLabel(QLabel):
 				options={'maxfev': 1000000, 'maxiter':1000000, 'xtol': 1e-8, 'disp': True})
 			return res.x
 
-		P0_estim = Place(BackwardTransform(P0_start, Pn, angles))
-		P0_estim.ShowOnMap()
+		P0_estim = BackwardTransform(P0_start, Pn, angles)
+		Place(P0_estim).ShowOnMap()
+
+		print('Residuals')
+		residuals = (180*(ForwardTransform(P0_estim, Pn) - angles)) / np.pi
+		print(residuals)
+		plt.close("all")
+		plt.plot(residuals, '-ob')
+		plt.ylabel('Residuals (degrees)')
+		plt.grid()
+		plt.show()
 
 
 class ImageViewer(QMainWindow):
