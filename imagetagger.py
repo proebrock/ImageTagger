@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 
 
@@ -78,12 +79,13 @@ class MarkerList(list):
 			# 1st row: Image X coordinates
 			result[i, 0] = self[i].x
 			# 2nd row: Place Y coordinate
-			result[i, 1] = mountains[self[i].key].ch1903[0]
+			result[i, 1] = mountains[self[i].key].CH1903()[0]
 			# 3rd row: Place X coordinate
-			result[i, 2] = mountains[self[i].key].ch1903[1]
+			result[i, 2] = mountains[self[i].key].CH1903()[1]
+		# Sort all rows by entries in first column: All points sorted from left to right
 		order = result[:,0].argsort()
 		result = np.take(result, order, 0)
-		return (result[:,0] - result[0,0], result[:,1:3])
+		return (result[:,0], result[:,1:3])
 
 
 
@@ -276,19 +278,28 @@ class MyLabel(QLabel):
 		print('Sensor width {0} mm'.format(sensorWidthMillimeters))
 		sensorWidthPixels = 7360 # TODO: Read from EXIF
 		print('Sensor width {0} pixels'.format(sensorWidthPixels))
+
+		gpsPlace = None
+		if 'GPSInfo' in exifInfo:
+			gpsInfo = exifInfo['GPSInfo']
+			p = gpsInfo[2]
+			lat = (p[0][0] / p[0][1]) + (p[1][0] / (60.0 * p[1][1])) + (p[2][0] / (3600.0 * p[2][1]))
+			p = gpsInfo[4]
+			lon = (p[0][0] / p[0][1]) + (p[1][0] / (60.0 * p[1][1])) + (p[2][0] / (3600.0 * p[2][1]))
+			gpsPlace = Place(wgs84=np.array([lat, lon]))
 		
 		(pixelDiffs, Pn) = self.markerList.GetPositions()
 		mmDiffs = (sensorWidthMillimeters * pixelDiffs) / sensorWidthPixels
-		angles = 2 * np.arctan2(focalLengthMillimeters, mmDiffs/2.0)
-		angles = np.abs(angles - angles[0])
-		P0_start = np.mean(Pn,0)
+		angles = 2.0 * np.arctan2(mmDiffs / 2.0, focalLengthMillimeters)
+		angles = np.abs(angles - angles[0]) # All angles relative to azimut to leftmost point
+		P0_start = np.mean(Pn,0) # Starting point is center of gravity of all points involved
 
 		# Calculates angles between P0 and all points in Pn
 		def ForwardTransform(P0, Pn):
 			delta = Pn-P0
 			angles = np.arctan2(delta[:,1],delta[:,0])
-			return np.abs(angles - angles[0])
-		# Helper function of BackwardTransform
+			return np.abs(angles - angles[0]) # All angles relative to azimut to leftmost point
+		# Helper/Objective function of BackwardTransform
 		def	ObjFunc(P0, Pn, angles):
 			return np.sum(np.square(ForwardTransform(P0, Pn) - angles))
 		# Estimates P0 from the points Pn and angles between P0 and Pn
@@ -297,11 +308,14 @@ class MyLabel(QLabel):
 				options={'maxfev': 1000000, 'maxiter':1000000, 'xtol': 1e-8, 'disp': True})
 			return res.x
 
-		P0_estim = BackwardTransform(P0_start, Pn, angles)
-		Place(P0_estim).ShowOnMap()
+		P0_estim = Place(ch1903=BackwardTransform(P0_start, Pn, angles))
+		#P0_estim.ShowOnMap()
+
+		if gpsPlace is not None:
+			print('Error of estimation compared to GPS tag in image is {0}m'.format(gpsPlace.Distance(P0_estim)))
 
 		print('Residuals')
-		residuals = (180*(ForwardTransform(P0_estim, Pn) - angles)) / np.pi
+		residuals = (180*(ForwardTransform(P0_estim.CH1903(), Pn) - angles)) / np.pi
 		print(residuals)
 		plt.close("all")
 		plt.plot(residuals, '-ob')

@@ -6,22 +6,27 @@
 import json
 import numpy as np
 import webbrowser
+from wgs84_ch1903 import ApproxSwissProj
 
 
 
 class Place:
 
-	def __init__(self, node_or_array):
-		if isinstance(node_or_array, np.ndarray):
-			self.name = 'Unknown'
-			self.height = 0
-			self.ch1903 = node_or_array
-		else:
-			node = node_or_array
+	def __init__(self, node=None, ch1903=None, wgs84=None):
+		if node is not None:
 			self.name = node['Name']
 			self.height = float(node['Height'])
 			self.ch1903 = np.array([ float(node['CH1903'][0]), \
 				float(node['CH1903'][1]) ])
+		elif ch1903 is not None:
+			self.name = 'Unknown'
+			self.height = 0
+			self.ch1903 = ch1903
+		elif wgs84 is not None:
+			self.name = 'Unknown'
+			self.height = 0
+			self.ch1903 = np.array([ ApproxSwissProj.WGStoCHy(wgs84[0], wgs84[1]), \
+				ApproxSwissProj.WGStoCHx(wgs84[0], wgs84[1]) ])
 
 	def __str__(self):
 		return self.name + ' ' + str(self.height) + \
@@ -40,18 +45,13 @@ class Place:
 		magneticDeclination = 1.56 # Place and time dependent ...
 		return magneticDeclination + \
 			(180.0 * np.arctan2(delta[1], delta[0])) / np.pi
+	
+	def CH1903(self):
+		return self.ch1903
 
 	def WGS84(self):
-		y = (self.ch1903[0] - 600000.0) / 1000000.0
-		x = (self.ch1903[1] - 200000.0) / 1000000.0
-		lat = 16.9023892 + 3.238272 * x - 0.270978 * pow(y,2) \
-			- 0.002528 * pow(x,2) - 0.0447 * pow(y,2) * x \
-			- 0.0140 * pow(x,3)
-		lat = (lat * 100.0) / 36.0
-		lng = 2.6779094 + 4.728982 * y + 0.791484 * y * x \
-			+ 0.1306 * y * pow(x,2) - 0.0436 * pow(y,3)
-		lng = (lng * 100.0) / 36.0
-		return np.array([lat, lng])
+		return np.array([ ApproxSwissProj.CHtoWGSlat(y, x), \
+			ApproxSwissProj.CHtoWGSlon(y, x) ])
 	
 	@staticmethod
 	def LoadListFromFile(filename):
@@ -61,7 +61,7 @@ class Place:
 			placesRoot = json.load(f)
 			f.close()
 			for node in placesRoot:
-				p = Place(node)
+				p = Place(node=node)
 				places[p.name + ' ' + str(p.height) + 'm'] = p
 		return places
 

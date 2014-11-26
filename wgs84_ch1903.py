@@ -10,7 +10,7 @@ import numpy as np
 class ApproxSwissProj:
 
 	@staticmethod
-	def void LV03toWGS84(east, north, height):
+	def LV03toWGS84(east, north, height):
 		latitude = CHtoWGSlat(east, north)
 		longitude = CHtoWGSlng(east, north)
 		ellHeight = CHtoWGSheight(east, north, height)
@@ -66,8 +66,7 @@ class ApproxSwissProj:
 
 	# Convert WGS lat/long (° dec) and height to CH h
 	@staticmethod
-	def WGStoCHh(lat, lng, h) 
-	{
+	def WGStoCHh(lat, lng, h):
 		# Converts degrees dec to sex
 		lat = ApproxSwissProj.DecToSexAngle(lat)
 		lng = ApproxSwissProj.DecToSexAngle(lng)
@@ -75,8 +74,8 @@ class ApproxSwissProj:
 		lat = ApproxSwissProj.SexAngleToSeconds(lat)
 		lng = ApproxSwissProj.SexAngleToSeconds(lng)
 		# Axiliary values (% Bern)
-		double lat_aux = (lat - 169028.66) / 10000.0
-		double lng_aux = (lng - 26782.5) / 10000.0
+		lat_aux = (lat - 169028.66) / 10000.0
+		lng_aux = (lng - 26782.5) / 10000.0
 		# Process h
 		h = h - 49.55 \
 			  +  2.73 * lng_aux \
